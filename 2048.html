@@ -1,0 +1,92 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0e1a;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:'JetBrains Mono',monospace;color:#e8f4ff;user-select:none;}
+h2{color:#00d4ff;margin-bottom:6px;}
+#score{font-size:14px;color:#7a9bb5;margin-bottom:12px;}#score span{color:#00d4ff;font-weight:700;}
+#grid{display:grid;grid-template-columns:repeat(4,90px);gap:8px;background:rgba(0,212,255,0.05);padding:10px;border-radius:12px;border:1px solid rgba(0,212,255,0.15);}
+.tile{width:90px;height:90px;display:flex;align-items:center;justify-content:center;border-radius:10px;font-weight:800;font-size:22px;transition:all 0.1s;}
+button{margin-top:14px;background:#00d4ff;color:#000;border:none;padding:8px 24px;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:700;}
+#msg{font-size:13px;color:#ff6b35;margin-top:8px;}
+</style></head><body>
+<h2>🔢 2048</h2>
+<div id="score">Score: <span id="sc">0</span> | Best: <span id="best">0</span></div>
+<div id="grid"></div>
+<button onclick="newGame()">New Game</button>
+<div id="msg"></div>
+<script>
+const COLORS={0:'rgba(0,0,0,0.3)',2:'#1a3a4a',4:'#1a4a3a',8:'#ff6b35',16:'#ff5020',32:'#ff3500',64:'#ff1a00',128:'#ffaa00',256:'#ffcc00',512:'#00d4ff',1024:'#6600ff',2048:'#ff4488'};
+let board,score,best=0;
+
+function newGame(){
+  board=Array.from({length:4},()=>Array(4).fill(0));
+  score=0;document.getElementById('msg').textContent='';
+  addTile();addTile();render();
+}
+
+function addTile(){
+  const empty=[];
+  for(let r=0;r<4;r++)for(let c=0;c<4;c++)if(!board[r][c])empty.push([r,c]);
+  if(!empty.length)return;
+  const[r,c]=empty[Math.floor(Math.random()*empty.length)];
+  board[r][c]=Math.random()<0.9?2:4;
+}
+
+function move(dir){
+  const orig=JSON.stringify(board);
+  const dirs={left:()=>slide(false,false),right:()=>slide(false,true),up:()=>slide(true,false),down:()=>slide(true,true)};
+  dirs[dir]();
+  if(JSON.stringify(board)!==orig){addTile();render();}
+  if(!canMove()){document.getElementById('msg').textContent='Game Over!';}
+  if(board.flat().includes(2048))document.getElementById('msg').textContent='🎉 You reached 2048!';
+}
+
+function slide(vert,rev){
+  for(let i=0;i<4;i++){
+    let line=[];
+    for(let j=0;j<4;j++)line.push(vert?board[j][i]:board[i][j]);
+    if(rev)line.reverse();
+    line=line.filter(v=>v);
+    for(let j=0;j<line.length-1;j++)if(line[j]===line[j+1]){line[j]*=2;score+=line[j];line.splice(j+1,1);}
+    while(line.length<4)line.push(0);
+    if(rev)line.reverse();
+    for(let j=0;j<4;j++)vert?board[j][i]=line[j]:board[i][j]=line[j];
+  }
+  if(score>best)best=score;
+  document.getElementById('sc').textContent=score;
+  document.getElementById('best').textContent=best;
+}
+
+function canMove(){
+  if(board.flat().includes(0))return true;
+  for(let r=0;r<4;r++)for(let c=0;c<4;c++){
+    if(c<3&&board[r][c]===board[r][c+1])return true;
+    if(r<3&&board[r][c]===board[r+1][c])return true;
+  }
+  return false;
+}
+
+function render(){
+  const grid=document.getElementById('grid');grid.innerHTML='';
+  board.flat().forEach(v=>{
+    const t=document.createElement('div');t.className='tile';
+    t.style.background=COLORS[v]||'#ff4488';
+    t.style.color=v<=4?'#7a9bb5':'#fff';
+    t.style.fontSize=v>=1000?'18px':v>=100?'22px':'26px';
+    t.textContent=v||'';grid.appendChild(t);
+  });
+}
+
+document.addEventListener('keydown',e=>{
+  const map={'ArrowLeft':'left','ArrowRight':'right','ArrowUp':'up','ArrowDown':'down'};
+  if(map[e.key]){move(map[e.key]);e.preventDefault();}
+});
+
+let tx=0;
+document.addEventListener('touchstart',e=>tx=e.touches[0].clientX);
+document.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-tx;
+  if(Math.abs(dx)>30)move(dx>0?'right':'left');
+});
+
+newGame();
+</script></body></html>

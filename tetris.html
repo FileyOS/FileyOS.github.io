@@ -1,0 +1,93 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0e1a;display:flex;align-items:center;justify-content:center;height:100vh;font-family:'JetBrains Mono',monospace;color:#e8f4ff;gap:20px;user-select:none;}
+canvas{border:2px solid rgba(0,212,255,0.3);border-radius:6px;background:#000;}
+#side{display:flex;flex-direction:column;gap:12px;min-width:100px;}
+.label{font-size:11px;color:#7a9bb5;text-transform:uppercase;letter-spacing:1px;}
+.val{font-size:22px;font-weight:700;color:#00d4ff;}
+#next{width:100px;height:100px;border:1px solid rgba(0,212,255,0.2);border-radius:6px;background:#000;}
+button{background:#00d4ff;color:#000;border:none;padding:8px;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;}
+#msg{font-size:12px;color:#ff6b35;text-align:center;}
+</style></head><body>
+<canvas id="c" width="200" height="400"></canvas>
+<div id="side">
+  <div><div class="label">Score</div><div class="val" id="sc">0</div></div>
+  <div><div class="label">Level</div><div class="val" id="lv">1</div></div>
+  <div><div class="label">Lines</div><div class="val" id="ln">0</div></div>
+  <div><div class="label">Next</div><canvas id="next"></canvas></div>
+  <button onclick="startGame()">New Game</button>
+  <div id="msg">↑ Rotate<br>←→ Move<br>↓ Soft Drop<br>Space: Hard Drop</div>
+</div>
+<script>
+const C=document.getElementById('c'),ctx=C.getContext('2d');
+const N=document.getElementById('next'),nCtx=N.getContext('2d');
+const W=10,H=20,S=20;
+const COLORS=['','#ff6b35','#00d4ff','#6600ff','#ffaa00','#00ff88','#ff4488','#ffffff'];
+const PIECES=[
+  [[1,1,1,1]],
+  [[2,2],[2,2]],
+  [[0,3,3],[3,3,0]],
+  [[4,4,0],[0,4,4]],
+  [[5,0],[5,0],[5,5]],
+  [[0,6],[0,6],[6,6]],
+  [[0,7,0],[7,7,7]],
+];
+
+let board,piece,pieceX,pieceY,nextPiece,score,lines,level,running,loop;
+
+function startGame(){
+  board=Array.from({length:H},()=>Array(W).fill(0));
+  score=0;lines=0;level=1;running=true;
+  nextPiece=randomPiece();spawnPiece();
+  update();clearInterval(loop);
+  loop=setInterval(()=>{if(running)drop();},getSpeed());
+}
+function getSpeed(){return Math.max(100,600-level*50);}
+function randomPiece(){return PIECES[Math.floor(Math.random()*PIECES.length)];}
+function spawnPiece(){
+  piece=nextPiece;nextPiece=randomPiece();
+  pieceX=Math.floor(W/2)-Math.floor(piece[0].length/2);pieceY=0;
+  if(collide(piece,pieceX,pieceY)){running=false;document.getElementById('msg').textContent='GAME OVER';}
+}
+function collide(p,px,py){
+  return p.some((row,r)=>row.some((v,c)=>v&&(board[py+r]?.[px+c])!==0||(py+r>=H||px+c<0||px+c>=W)));
+}
+function merge(){piece.forEach((row,r)=>row.forEach((v,c)=>{if(v)board[pieceY+r][pieceX+c]=v;}));}
+function clearLines(){
+  let cleared=0;
+  for(let r=H-1;r>=0;r--){if(board[r].every(v=>v)){board.splice(r,1);board.unshift(Array(W).fill(0));cleared++;r++;}}
+  if(cleared){lines+=cleared;score+=cleared*100*level;level=Math.floor(lines/10)+1;clearInterval(loop);loop=setInterval(()=>{if(running)drop();},getSpeed());}
+  update();
+}
+function drop(){if(!collide(piece,pieceX,pieceY+1)){pieceY++;}else{merge();clearLines();spawnPiece();}draw();}
+
+function rotate(p){return p[0].map((_,i)=>p.map(row=>row[i]).reverse());}
+
+document.addEventListener('keydown',e=>{
+  if(!running&&e.key===' '){startGame();return;}
+  if(!running)return;
+  if(e.key==='ArrowLeft'){if(!collide(piece,pieceX-1,pieceY))pieceX--;}
+  if(e.key==='ArrowRight'){if(!collide(piece,pieceX+1,pieceY))pieceX++;}
+  if(e.key==='ArrowDown'){drop();}
+  if(e.key==='ArrowUp'){const r=rotate(piece);if(!collide(r,pieceX,pieceY))piece=r;}
+  if(e.key===' '){while(!collide(piece,pieceX,pieceY+1))pieceY++;drop();}
+  draw();e.preventDefault();
+});
+
+function draw(){
+  ctx.fillStyle='#000';ctx.fillRect(0,0,200,400);
+  board.forEach((row,r)=>row.forEach((v,c)=>{if(v){ctx.fillStyle=COLORS[v];ctx.fillRect(c*S+1,r*S+1,S-2,S-2);}}));
+  // Ghost
+  let gy=pieceY;while(!collide(piece,pieceX,gy+1))gy++;
+  piece.forEach((row,r)=>row.forEach((v,c)=>{if(v){ctx.fillStyle='rgba(255,255,255,0.1)';ctx.fillRect((pieceX+c)*S+1,(gy+r)*S+1,S-2,S-2);}}));
+  // Piece
+  piece.forEach((row,r)=>row.forEach((v,c)=>{if(v){ctx.fillStyle=COLORS[v];ctx.fillRect((pieceX+c)*S+1,(pieceY+r)*S+1,S-2,S-2);}}));
+  // Next
+  nCtx.fillStyle='#000';nCtx.fillRect(0,0,100,100);
+  const ox=(5-nextPiece[0].length)*S/2,oy=(5-nextPiece.length)*S/2;
+  nextPiece.forEach((row,r)=>row.forEach((v,c)=>{if(v){nCtx.fillStyle=COLORS[v];nCtx.fillRect(ox+c*S,oy+r*S,S-2,S-2);}}));
+}
+function update(){document.getElementById('sc').textContent=score;document.getElementById('lv').textContent=level;document.getElementById('ln').textContent=lines;}
+
+ctx.fillStyle='#00d4ff';ctx.font='14px JetBrains Mono';ctx.textAlign='center';ctx.fillText('Press Space',100,190);ctx.fillText('to Start',100,210);
+</script></body></html>

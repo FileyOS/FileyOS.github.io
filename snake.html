@@ -1,0 +1,67 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0e1a;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:'JetBrains Mono',monospace;color:#e8f4ff;user-select:none;}
+h2{font-size:18px;margin-bottom:8px;color:#00d4ff;}
+#score{font-size:14px;color:#7a9bb5;margin-bottom:12px;}
+canvas{border:2px solid rgba(0,212,255,0.3);border-radius:8px;background:#000;}
+#msg{margin-top:12px;font-size:13px;color:#00d4ff;}
+button{margin-top:10px;background:#00d4ff;color:#000;border:none;padding:8px 24px;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:700;font-size:13px;}
+</style></head><body>
+<h2>🐍 Snake</h2>
+<div id="score">Score: <span id="sc">0</span> | Best: <span id="best">0</span></div>
+<canvas id="c" width="400" height="400"></canvas>
+<div id="msg">Press Space or tap to start</div>
+<button onclick="startGame()">New Game</button>
+<script>
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+const CELL=20,COLS=20,ROWS=20;
+let snake,dir,food,score,best=0,running=false,loop;
+
+function startGame(){
+  snake=[{x:10,y:10}];dir={x:1,y:0};score=0;
+  spawnFood();running=true;
+  document.getElementById('msg').textContent='Use arrow keys or WASD';
+  clearInterval(loop);loop=setInterval(tick,130);
+}
+
+function spawnFood(){
+  do{food={x:Math.floor(Math.random()*COLS),y:Math.floor(Math.random()*ROWS)}}
+  while(snake.some(s=>s.x===food.x&&s.y===food.y));
+}
+
+function tick(){
+  const head={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
+  if(head.x<0||head.x>=COLS||head.y<0||head.y>=ROWS||snake.some(s=>s.x===head.x&&s.y===head.y)){
+    clearInterval(loop);running=false;
+    document.getElementById('msg').textContent=`Game Over! Score: ${score}`;return;
+  }
+  snake.unshift(head);
+  if(head.x===food.x&&head.y===food.y){score++;document.getElementById('sc').textContent=score;if(score>best){best=score;document.getElementById('best').textContent=best;}spawnFood();}
+  else snake.pop();
+  draw();
+}
+
+function draw(){
+  ctx.fillStyle='#000';ctx.fillRect(0,0,400,400);
+  // food
+  ctx.fillStyle='#ff6b35';
+  ctx.beginPath();ctx.arc(food.x*CELL+CELL/2,food.y*CELL+CELL/2,CELL/2-2,0,Math.PI*2);ctx.fill();
+  // snake
+  snake.forEach((s,i)=>{
+    ctx.fillStyle=i===0?'#00d4ff':`rgba(0,212,255,${1-i/snake.length*0.6})`;
+    ctx.beginPath();ctx.roundRect(s.x*CELL+1,s.y*CELL+1,CELL-2,CELL-2,4);ctx.fill();
+  });
+}
+
+document.addEventListener('keydown',e=>{
+  const map={'ArrowUp':{x:0,y:-1},'ArrowDown':{x:0,y:1},'ArrowLeft':{x:-1,y:0},'ArrowRight':{x:1,y:0},
+    'w':{x:0,y:-1},'s':{x:0,y:1},'a':{x:-1,y:0},'d':{x:1,y:0}};
+  if(e.key===' '){if(!running)startGame();return;}
+  if(map[e.key]){
+    const nd=map[e.key];
+    if(nd.x!==-dir.x||nd.y!==-dir.y)dir=nd;
+    e.preventDefault();
+  }
+});
+draw();ctx.fillStyle='#00d4ff';ctx.font='16px JetBrains Mono';ctx.textAlign='center';ctx.fillText('Press Space to Start',200,200);
+</script></body></html>

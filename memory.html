@@ -1,0 +1,52 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0e1a;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:'JetBrains Mono',monospace;color:#e8f4ff;user-select:none;}
+h2{color:#00d4ff;margin-bottom:6px;}
+#stats{font-size:13px;color:#7a9bb5;margin-bottom:14px;}
+#stats span{color:#00d4ff;font-weight:700;}
+#grid{display:grid;grid-template-columns:repeat(4,70px);gap:8px;}
+.card{width:70px;height:70px;background:rgba(0,212,255,0.1);border:2px solid rgba(0,212,255,0.3);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;transition:all 0.3s;transform:rotateY(90deg);}
+.card.show{transform:rotateY(0deg);background:rgba(0,212,255,0.15);}
+.card.matched{background:rgba(0,255,136,0.15);border-color:rgba(0,255,136,0.5);cursor:default;}
+button{margin-top:14px;background:#00d4ff;color:#000;border:none;padding:8px 24px;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:700;}
+</style></head><body>
+<h2>🃏 Memory</h2>
+<div id="stats">Moves: <span id="mv">0</span> &nbsp; Pairs: <span id="pr">0</span>/8</div>
+<div id="grid"></div>
+<button onclick="newGame()">New Game</button>
+<script>
+const EMOJIS=['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼'];
+let cards=[],flipped=[],matched=0,moves=0,lock=false;
+
+function newGame(){
+  matched=0;moves=0;flipped=[];lock=false;update();
+  const pairs=[...EMOJIS,...EMOJIS].sort(()=>Math.random()-0.5);
+  const grid=document.getElementById('grid');
+  grid.innerHTML='';
+  cards=pairs.map((emoji,i)=>{
+    const el=document.createElement('div');
+    el.className='card';el.dataset.i=i;el.dataset.emoji=emoji;
+    el.addEventListener('click',()=>flip(el));
+    grid.appendChild(el);return el;
+  });
+  setTimeout(()=>cards.forEach(c=>{c.textContent=c.dataset.emoji;c.classList.add('show');}),100);
+  setTimeout(()=>cards.forEach(c=>{c.textContent='';c.classList.remove('show');}),1800);
+}
+
+function flip(card){
+  if(lock||card.classList.contains('matched')||card.classList.contains('show'))return;
+  card.textContent=card.dataset.emoji;card.classList.add('show');
+  flipped.push(card);
+  if(flipped.length===2){
+    moves++;update();lock=true;
+    if(flipped[0].dataset.emoji===flipped[1].dataset.emoji){
+      flipped.forEach(c=>c.classList.add('matched'));matched++;update();flipped=[];lock=false;
+      if(matched===8)setTimeout(()=>alert(`🎉 You won in ${moves} moves!`),200);
+    }else{
+      setTimeout(()=>{flipped.forEach(c=>{c.textContent='';c.classList.remove('show');});flipped=[];lock=false;},1000);
+    }
+  }
+}
+function update(){document.getElementById('mv').textContent=moves;document.getElementById('pr').textContent=matched;}
+newGame();
+</script></body></html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:'JetBrains Mono',monospace;color:#fff;user-select:none;}
+canvas{border:2px solid rgba(0,212,255,0.3);border-radius:6px;}
+#info{font-size:11px;color:#7a9bb5;margin-top:8px;text-align:center;}
+</style></head><body>
+<canvas id="c" width="500" height="350"></canvas>
+<div id="info">W/S = Player 1 &nbsp;|&nbsp; ↑/↓ = Player 2 &nbsp;|&nbsp; Space = Start/Pause</div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const W=500,H=350,PH=60,PW=10;
+let p1={y:H/2-30,score:0},p2={y:H/2-30,score:0};
+let ball={x:W/2,y:H/2,vx:4,vy:3};
+let running=false,keys={};
+
+document.addEventListener('keydown',e=>{keys[e.key]=true;if(e.key===' '){running=!running;if(reset)reset=false;}e.preventDefault();});
+document.addEventListener('keyup',e=>keys[e.key]=false);
+
+let reset=false;
+
+function tick(){
+  if(!running){draw();requestAnimationFrame(tick);return;}
+  // Paddles
+  if(keys['w'])p1.y=Math.max(0,p1.y-5);
+  if(keys['s'])p1.y=Math.min(H-PH,p1.y+5);
+  if(keys['ArrowUp'])p2.y=Math.max(0,p2.y-5);
+  if(keys['ArrowDown'])p2.y=Math.min(H-PH,p2.y+5);
+  // Ball
+  ball.x+=ball.vx;ball.y+=ball.vy;
+  if(ball.y<=5||ball.y>=H-5)ball.vy*=-1;
+  // P1 paddle
+  if(ball.x-5<=20&&ball.y>=p1.y&&ball.y<=p1.y+PH){ball.vx=Math.abs(ball.vx);ball.vy+=((ball.y-(p1.y+PH/2))/PH)*3;}
+  // P2 paddle
+  if(ball.x+5>=W-20&&ball.y>=p2.y&&ball.y<=p2.y+PH){ball.vx=-Math.abs(ball.vx);ball.vy+=((ball.y-(p2.y+PH/2))/PH)*3;}
+  // Score
+  if(ball.x<0){p2.score++;respawn(-1);}
+  if(ball.x>W){p1.score++;respawn(1);}
+  // Cap speed
+  const spd=Math.sqrt(ball.vx**2+ball.vy**2);if(spd>12){ball.vx=ball.vx/spd*12;ball.vy=ball.vy/spd*12;}
+  draw();requestAnimationFrame(tick);
+}
+
+function respawn(dir){
+  ball={x:W/2,y:H/2,vx:4*dir,vy:(Math.random()-0.5)*6};
+  p1.y=H/2-30;p2.y=H/2-30;
+}
+
+function draw(){
+  ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+  // Center line
+  ctx.setLineDash([10,10]);ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.stroke();ctx.setLineDash([]);
+  // Scores
+  ctx.fillStyle='rgba(0,212,255,0.4)';ctx.font='bold 48px JetBrains Mono';ctx.textAlign='center';
+  ctx.fillText(p1.score,W/4,60);ctx.fillText(p2.score,W*3/4,60);
+  // Paddles
+  const grad1=ctx.createLinearGradient(10,0,20,0);grad1.addColorStop(0,'#00d4ff');grad1.addColorStop(1,'#0066ff');
+  ctx.fillStyle=grad1;ctx.beginPath();ctx.roundRect(10,p1.y,PW,PH,5);ctx.fill();
+  const grad2=ctx.createLinearGradient(W-20,0,W-10,0);grad2.addColorStop(0,'#ff6b35');grad2.addColorStop(1,'#ff0066');
+  ctx.fillStyle=grad2;ctx.beginPath();ctx.roundRect(W-20,p2.y,PW,PH,5);ctx.fill();
+  // Ball
+  ctx.fillStyle='#fff';ctx.shadowColor='#00d4ff';ctx.shadowBlur=15;
+  ctx.beginPath();ctx.arc(ball.x,ball.y,6,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+  if(!running){ctx.fillStyle='rgba(0,212,255,0.8)';ctx.font='16px JetBrains Mono';ctx.textAlign='center';ctx.fillText('Press Space to start',W/2,H-20);}
+}
+
+requestAnimationFrame(tick);
+</script></body></html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0e1a;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:'JetBrains Mono',monospace;color:#e8f4ff;user-select:none;}
+h2{color:#00d4ff;margin-bottom:6px;}
+#ui{display:flex;gap:20px;margin-bottom:10px;font-size:13px;}
+#ui span{color:#00d4ff;font-weight:700;}
+#grid{display:inline-grid;grid-template-columns:repeat(9,34px);gap:2px;}
+.cell{width:34px;height:34px;background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.25);border-radius:5px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;font-weight:700;transition:background 0.1s;}
+.cell:hover{background:rgba(0,212,255,0.2);}
+.cell.open{background:rgba(0,0,0,0.4);cursor:default;border-color:rgba(255,255,255,0.05);}
+.cell.flagged{background:rgba(255,107,53,0.15);border-color:rgba(255,107,53,0.4);}
+.cell.mine{background:rgba(255,0,0,0.2);}
+.n1{color:#00d4ff}.n2{color:#00ff88}.n3{color:#ff6b35}.n4{color:#6600ff}.n5{color:#ff0000}.n6{color:#ff4488}.n7{color:#fff}.n8{color:#888}
+button{margin-top:12px;background:#00d4ff;color:#000;border:none;padding:8px 20px;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:700;}
+</style></head><body>
+<h2>💣 Minesweeper</h2>
+<div id="ui">Mines: <span id="mc">10</span> &nbsp; Flags: <span id="fc">0</span></div>
+<div id="grid"></div>
+<button onclick="newGame()">New Game</button>
+<script>
+const ROWS=9,COLS=9,MINES=10;
+let board,revealed,flagged,gameOver,first;
+
+function newGame(){
+  board=Array.from({length:ROWS},()=>Array(COLS).fill(0));
+  revealed=Array.from({length:ROWS},()=>Array(COLS).fill(false));
+  flagged=Array.from({length:ROWS},()=>Array(COLS).fill(false));
+  gameOver=false;first=true;
+  document.getElementById('fc').textContent=0;
+  render();
+}
+
+function placeMines(sr,sc){
+  let placed=0;
+  while(placed<MINES){
+    const r=Math.floor(Math.random()*ROWS),c=Math.floor(Math.random()*COLS);
+    if(board[r][c]!==-1&&!(Math.abs(r-sr)<=1&&Math.abs(c-sc)<=1)){board[r][c]=-1;placed++;}
+  }
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    if(board[r][c]===-1)continue;
+    let cnt=0;
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+      const nr=r+dr,nc=c+dc;
+      if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&board[nr][nc]===-1)cnt++;
+    }
+    board[r][c]=cnt;
+  }
+}
+
+function reveal(r,c){
+  if(r<0||r>=ROWS||c<0||c>=COLS||revealed[r][c]||flagged[r][c])return;
+  if(first){placeMines(r,c);first=false;}
+  revealed[r][c]=true;
+  if(board[r][c]===-1){gameOver=true;revealAll();render();alert('💥 BOOM! Game Over');return;}
+  if(board[r][c]===0){for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++)reveal(r+dr,c+dc);}
+  if(revealed.flat().filter(Boolean).length===ROWS*COLS-MINES){alert('🎉 You win!');}
+  render();
+}
+
+function flag(r,c){
+  if(revealed[r][c])return;
+  flagged[r][c]=!flagged[r][c];
+  document.getElementById('fc').textContent=flagged.flat().filter(Boolean).length;
+  render();
+}
+
+function revealAll(){
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(board[r][c]===-1)revealed[r][c]=true;
+}
+
+function render(){
+  const grid=document.getElementById('grid');grid.innerHTML='';
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const cell=document.createElement('div');cell.className='cell';
+    if(flagged[r][c]&&!revealed[r][c]){cell.classList.add('flagged');cell.textContent='🚩';}
+    else if(revealed[r][c]){
+      cell.classList.add('open');
+      if(board[r][c]===-1){cell.classList.add('mine');cell.textContent='💣';}
+      else if(board[r][c]>0){cell.textContent=board[r][c];cell.classList.add('n'+board[r][c]);}
+    }
+    const rr=r,cc=c;
+    cell.addEventListener('click',()=>{if(!gameOver)reveal(rr,cc);});
+    cell.addEventListener('contextmenu',e=>{e.preventDefault();if(!gameOver)flag(rr,cc);});
+    grid.appendChild(cell);
+  }
+}
+newGame();
+</script></body></html>
