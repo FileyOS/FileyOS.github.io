@@ -7,6 +7,14 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗂️</text></svg>" />
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+
+  <!-- ═══════════════════════════════════════════════
+       SCRAMJET — replaces Ultraviolet entirely
+       /scram/scramjet.all.js  →  from Scramjet release zip
+       /baremux/bare.cjs       →  from bare-mux release zip
+       ═══════════════════════════════════════════════ -->
+  <script src="/scram/scramjet.all.js"></script>
+  <script src="/baremux/bare.cjs"></script>
 </head>
 <body>
 
@@ -35,7 +43,6 @@
 
 <!-- DESKTOP -->
 <div id="desktop" style="display:none">
-  <!-- Wallpaper -->
   <canvas id="wallpaper-canvas"></canvas>
 
   <!-- Desktop Icons -->
@@ -128,7 +135,7 @@
 
 </div>
 
-<!-- WINDOW TEMPLATE (hidden, cloned by JS) -->
+<!-- WINDOW TEMPLATE -->
 <template id="window-template">
   <div class="os-window" data-id="">
     <div class="win-titlebar">
